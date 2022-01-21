@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer')
 const fs = require('fs')
 const path = require('path')
 import { elesInterface, IParams } from './types'
+import utils from './utils'
 
 /**
  * xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -12,11 +13,11 @@ import { elesInterface, IParams } from './types'
  * version 版本
  */
 const version = '(初中)人教版'
-/**87hjjjjjjjjji
+/**
 /**
  * filePath  对应文件的路径
  */
-const filePath =
+const allFilePath =
   'C:/Users/zhourusheng/Desktop/初中默单词（8个版本）/(初中)人教版/七年级下册'
 
 /**
@@ -82,13 +83,24 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
     })
     .catch(() => browser.close)
 
-  async function uploldFileItem(params: IParams) {
+  async function uploldFileItem(params: IParams, isFinish: boolean) {
     const { version, grade, unit, filePath } = params
     const page = await browser.newPage()
 
     await page.setCookie(...cookies)
 
     await page.goto(pageUrl)
+
+    async function checkIsFinish() {
+      if (isFinish) {
+        await browser.close()
+        console.log(
+          '\x1B[36m%s\x1B[0m',
+          `${allFilePath} 文件已全部上传，请检查！`
+        )
+        process.exit()
+      }
+    }
 
     /**
      * 获取对应版本和 url
@@ -112,9 +124,6 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
 
     if (gradeUrl) {
       // 进入年级页面
-      // const gradePage = await browser.newPage()
-      // await gradePage.goto(gradeUrl)
-
       await page.goto(gradeUrl)
 
       const gradeEles = await page.$$eval(
@@ -140,9 +149,6 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
 
       if (unitUrl) {
         // 进入单元页面
-        // const unitPage = await browser.newPage()
-        // await unitPage.goto(unitUrl)
-
         await page.goto(unitUrl)
 
         const unitEles = await page.$$eval(
@@ -168,9 +174,6 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
           )?.url ?? ''
         if (fileUrl) {
           // 进入文件页面
-          // const filePage = await browser.newPage()
-          // await filePage.goto(fileUrl)
-
           await page.goto(fileUrl)
 
           const fileLists = await page.$$('.dashboard-datatable tbody tr')
@@ -180,8 +183,11 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
            */
           if (fileLists && fileLists.length) {
             console.error(
-              `${version}-${grade}-${unit} 已存在解析数据，防止数据重复故跳过`
+              '\x1B[31m%s\x1B[0m',
+              `${filePath} - ${version}-${grade}-${unit} 已存在解析数据，防止数据重复故跳过`
             )
+            await page.close()
+            await checkIsFinish()
           } else {
             const btnEles = await page.$$eval(
               '.m-portlet__body .btn-primary',
@@ -202,48 +208,61 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
               )
               await uploadInput.uploadFile(filePath)
 
-              await page.waitFor(1000)
+              // 监听上传请求成功
+              await page.waitForSelector('.uploader img[src^="blob"]')
 
+              await page.waitFor(1000)
               // 点击确定
               await page.click('.m-form__actions .btn-primary')
 
-              await page.goto(fileUrl)
               await page.waitFor(1000)
 
-              // 刷新页面
-              await page.reload({
-                waitUntil: ['networkidle0', 'domcontentloaded']
-              })
-
               await page.close()
-              console.log(`${version}-${grade}-${unit} 单元上传成功！！！！`)
+              console.log(
+                '\x1B[36m%s\x1B[0m',
+                `${filePath} -${version}-${grade}-${unit} 单元上传成功！！！！`
+              )
+              await checkIsFinish()
             } else {
               console.error(
-                `未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元上传 url, 请检查`
+                '\x1B[31m%s\x1B[0m',
+                `${filePath} -未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元上传 url, 请检查`
               )
+              await page.close()
+              await checkIsFinish()
             }
           }
         } else {
           console.error(
-            `未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元的url，请检查代码中 unit = ${unit} 的值是否正确`
+            '\x1B[31m%s\x1B[0m',
+            `${filePath} -未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元的url，请检查代码中 unit = ${unit} 的值是否正确`
           )
+          await page.close()
+          await checkIsFinish()
         }
       } else {
         console.error(
-          `未找到对应 ${version} 版本 ${grade} 年级的url，请检查代码中 grade = ${grade} 的值是否正确`
+          '\x1B[31m%s\x1B[0m',
+          `${filePath} -未找到对应 ${version} 版本 ${grade} 年级的url，请检查代码中 grade = ${grade} 的值是否正确`
         )
+        await page.close()
+        await checkIsFinish()
       }
     } else {
       console.error(
-        `未找到对应 ${version} 版本的url，请检查代码中 version = ${version} 的值是否正确`
+        '\x1B[31m%s\x1B[0m',
+        `${filePath} -未找到对应 ${version} 版本的url，请检查代码中 version = ${version} 的值是否正确`
       )
+      await page.close()
+      await checkIsFinish()
     }
   }
 
   async function readFileDir(filePath: string) {
     fs.readdir(filePath, function (err: any, files: any) {
-      if (err) throw err 
-      files.forEach(async (file: any) => {
+      if (err) throw err
+
+      utils.asyncForEach(files, async (file: any, index: number) => {
         //拼接获取绝对路径，fs.stat(绝对路径,回调函数)
         let _path = path.join(filePath, file)
         await fs.stat(_path, async (err: any, stat: { isFile: () => any }) => {
@@ -251,14 +270,18 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
             // stat 状态中有两个函数一个是stat中有isFile, isisDirectory等函数进行判断是文件还是文件夹
             const arr = _path.split(version)[1]
             const grade = arr.split('\\')[1].replace('册', '')
-            const unit = arr.split('\\')[2].replace('.xls', '')
+            const unit = arr
+              .split('\\')[2]
+              .replace('.xls', '')
+              .replace('.xlsx', '')
             const params = {
               version,
               grade,
               unit,
               filePath: _path
             }
-            await uploldFileItem(params)
+            const isFinish = index === files.length - 1
+            await uploldFileItem(params, isFinish)
           } else {
             readFileDir(_path)
           }
@@ -267,5 +290,5 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
     })
   }
 
-  readFileDir(filePath)
+  readFileDir(allFilePath)
 })()
