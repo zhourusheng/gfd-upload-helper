@@ -2,7 +2,6 @@ const puppeteer = require('puppeteer')
 const fs = require('fs')
 const path = require('path')
 import { elesInterface, IParams } from './types'
-import utils from './utils'
 
 /**
  * xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -12,13 +11,13 @@ import utils from './utils'
 /**
  * version 版本
  */
-const version = '(初中)人教版'
+const version = '(初中)译林版'
 /**
 /**
  * filePath  对应文件的路径
  */
 const allFilePath =
-  'C:/Users/zhourusheng/Desktop/初中默单词（8个版本）/(初中)人教版/七年级下册'
+  'C:/Users/zhourusheng/Desktop/初中默单词（8个版本）/(初中)译林版/七年级上册'
 
 /**
  * 设置 cookie
@@ -74,7 +73,16 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
     .launch({
       // 是否运行浏览器无头模式(boolean)
       headless: false,
-      args: ['--start-maximized', '--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--start-maximized',
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--disable-setuid-sandbox',
+        '--no-first-run',
+        '--no-sandbox',
+        '--no-zygote',
+        '--single-process'
+      ],
       defaultViewport: null,
       // 是否自动打开调试工具(boolean)，若此值为true，headless自动置为fasle
       devtools: false,
@@ -200,7 +208,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
                 '\x1B[31m%s\x1B[0m',
                 `${filePath} - ${version}-${grade}-${unit} 已存在解析数据，防止数据重复故跳过`
               )
-              await page.close()
+              // await page.close()
               await checkIsFinish()
             } else {
               const btnEles = await page.$$eval(
@@ -231,9 +239,9 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
                 // 点击确定
                 await page.click('.m-form__actions .btn-primary')
 
-                await page.waitFor(1000)
+                // await page.waitFor(1000)
 
-                await page.close()
+                // await page.close()
                 console.log(
                   '\x1B[36m%s\x1B[0m',
                   `${filePath} -${version}-${grade}-${unit} 单元上传成功！！！！`
@@ -244,7 +252,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
                   '\x1B[31m%s\x1B[0m',
                   `${filePath} -未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元上传 url, 请检查`
                 )
-                await page.close()
+                // await page.close()
                 await checkIsFinish()
               }
             }
@@ -253,7 +261,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
               '\x1B[31m%s\x1B[0m',
               `${filePath} -未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元的url，请检查代码中 unit = ${unit} 的值是否正确`
             )
-            await page.close()
+            // await page.close()
             await checkIsFinish()
           }
         } else {
@@ -261,7 +269,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
             '\x1B[31m%s\x1B[0m',
             `${filePath} -未找到对应 ${version} 版本 ${grade} 年级的url，请检查代码中 grade = ${grade} 的值是否正确`
           )
-          await page.close()
+          // await page.close()
           await checkIsFinish()
         }
       } else {
@@ -269,7 +277,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
           '\x1B[31m%s\x1B[0m',
           `${filePath} -未找到对应 ${version} 版本的url，请检查代码中 version = ${version} 的值是否正确`
         )
-        await page.close()
+        // await page.close()
         await checkIsFinish()
       }
     })
