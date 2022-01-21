@@ -85,159 +85,181 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
     .catch(() => browser.close)
 
   async function uploldFileItem(params: IParams, isFinish: boolean) {
-    const { version, grade, unit, filePath } = params
-    const page = await browser.newPage()
+    return new Promise<void>(async (resolve, reject) => {
+      const { version, grade, unit, filePath } = params
+      const page = await browser.newPage()
 
-    await page.setCookie(...cookies)
+      await page.setCookie(...cookies)
 
-    await page.goto(pageUrl, { waitUntil: 'load' })
+      await page.goto(pageUrl, { waitUntil: 'load' })
 
-    async function checkIsFinish() {
-      if (isFinish) {
-        console.log(
-          '\x1B[36m%s\x1B[0m',
-          `${allFilePath} 文件已全部上传，请检查！`
-        )
-        await page.waitFor(1000)
-        await browser.close()
-        process.exit()
+      async function checkIsFinish() {
+        if (isFinish) {
+          console.log(
+            '\x1B[36m%s\x1B[0m',
+            `${allFilePath} 文件已全部上传，请检查！`
+          )
+          await page.waitFor(1000)
+          await browser.close()
+          resolve()
+          process.exit()
+        } else {
+          resolve()
+        }
       }
-    }
 
-    /**
-     * 获取对应版本和 url
-     */
-    const versionEles = await page.$$eval(
-      '.dashboard-datatable tbody tr',
-      (elements: any) => {
-        return elements.map((item: any) => {
-          return {
-            version: item.children[0].innerText,
-            url: item.children[3].children[0].href
-          }
-        })
-      }
-    )
-    // console.log('对应的版本和页面url:', versionEles)
+      await page.waitFor(1000)
 
-    const gradeUrl =
-      versionEles.find((item: elesInterface) => item.version === version)
-        ?.url ?? ''
-
-    if (gradeUrl) {
-      // 进入年级页面
-      await page.goto(gradeUrl, { waitUntil: 'load' })
-
-      const gradeEles = await page.$$eval(
+      /**
+       * 获取对应版本和 url
+       */
+      const versionEles = await page.$$eval(
         '.dashboard-datatable tbody tr',
         (elements: any) => {
           return elements.map((item: any) => {
             return {
-              version: item.children[0].innerText
-                .replace('(', '')
-                .replace(')', '')
-                .replace('（', '')
-                .replace('）', ''),
-              url: item.children[2].children[0].href
+              version: item.children[0].innerText,
+              url: item.children[3].children[0].href
             }
           })
         }
       )
-      // console.log(`${version} 对应的年级和页面url`, gradeEles)
+      // console.log('对应的版本和页面url:', versionEles)
 
-      const unitUrl =
-        gradeEles.find((item: elesInterface) => item.version.includes(grade))
+      const gradeUrl =
+        versionEles.find((item: elesInterface) => item.version === version)
           ?.url ?? ''
 
-      if (unitUrl) {
-        // 进入单元页面
-        await page.goto(unitUrl, { waitUntil: 'load' })
+      if (gradeUrl) {
+        // 进入年级页面
+        await page.goto(gradeUrl, { waitUntil: 'load' })
 
-        const unitEles = await page.$$eval(
+        await page.waitFor(1000)
+
+        const gradeEles = await page.$$eval(
           '.dashboard-datatable tbody tr',
           (elements: any) => {
             return elements.map((item: any) => {
               return {
                 version: item.children[0].innerText
-                  .toLowerCase()
-                  .replace(/\s*/g, ''),
-                url: item.children[1].children[0].href
+                  .replace('(', '')
+                  .replace(')', '')
+                  .replace('（', '')
+                  .replace('）', ''),
+                url: item.children[2].children[0].href
               }
             })
           }
         )
+        // console.log(`${version} 对应的年级和页面url`, gradeEles)
 
-        // console.log(`${unit} 对应的url`, unitEles)
+        const unitUrl =
+          gradeEles.find((item: elesInterface) => item.version.includes(grade))
+            ?.url ?? ''
 
-        const fileUrl =
-          unitEles.find(
-            (item: elesInterface) =>
-              item.version === unit.toLowerCase().replace(/\s*/g, '')
-          )?.url ?? ''
-        if (fileUrl) {
-          // 进入文件页面
-          await page.goto(fileUrl, { waitUntil: 'load' })
+        if (unitUrl) {
+          // 进入单元页面
+          await page.goto(unitUrl, { waitUntil: 'load' })
 
-          const fileLists = await page.$$('.dashboard-datatable tbody tr')
-          /**
-           * 判断当前页面是否已经存在解析数据
-           * 存在数据则不上传，防止数据重复
-           */
-          if (fileLists && fileLists.length) {
+          await page.waitFor(1000)
+
+          const unitEles = await page.$$eval(
+            '.dashboard-datatable tbody tr',
+            (elements: any) => {
+              return elements.map((item: any) => {
+                return {
+                  version: item.children[0].innerText
+                    .toLowerCase()
+                    .replace(/\s*/g, ''),
+                  url: item.children[1].children[0].href
+                }
+              })
+            }
+          )
+
+          // console.log(`${unit} 对应的url`, unitEles)
+
+          const fileUrl =
+            unitEles.find(
+              (item: elesInterface) =>
+                item.version === unit.toLowerCase().replace(/\s*/g, '')
+            )?.url ?? ''
+          if (fileUrl) {
+            // 进入文件页面
+            await page.goto(fileUrl, { waitUntil: 'load' })
+
+            await page.waitFor(1000)
+
+            const fileLists = await page.$$('.dashboard-datatable tbody tr')
+            /**
+             * 判断当前页面是否已经存在解析数据
+             * 存在数据则不上传，防止数据重复
+             */
+            if (fileLists && fileLists.length) {
+              console.error(
+                '\x1B[31m%s\x1B[0m',
+                `${filePath} - ${version}-${grade}-${unit} 已存在解析数据，防止数据重复故跳过`
+              )
+              await page.close()
+              await checkIsFinish()
+            } else {
+              const btnEles = await page.$$eval(
+                '.m-portlet__body .btn-primary',
+                (elements: any) => {
+                  return elements.map((item: any) => {
+                    return item.href
+                  })
+                }
+              )
+              const uploadUrl = btnEles[1]
+              if (uploadUrl) {
+                // 进入上传页面
+                await page.goto(uploadUrl, { waitUntil: 'load' })
+
+                await page.waitFor(1000)
+
+                // 点击上传文件
+                const uploadInput = await page.waitForSelector(
+                  '.uploader .uploader__input'
+                )
+                await uploadInput.uploadFile(filePath)
+
+                // 监听上传请求成功
+                await page.waitForSelector('.uploader img[src^="blob"]')
+
+                await page.waitFor(1000)
+                // 点击确定
+                await page.click('.m-form__actions .btn-primary')
+
+                await page.waitFor(1000)
+
+                await page.close()
+                console.log(
+                  '\x1B[36m%s\x1B[0m',
+                  `${filePath} -${version}-${grade}-${unit} 单元上传成功！！！！`
+                )
+                await checkIsFinish()
+              } else {
+                console.error(
+                  '\x1B[31m%s\x1B[0m',
+                  `${filePath} -未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元上传 url, 请检查`
+                )
+                await page.close()
+                await checkIsFinish()
+              }
+            }
+          } else {
             console.error(
               '\x1B[31m%s\x1B[0m',
-              `${filePath} - ${version}-${grade}-${unit} 已存在解析数据，防止数据重复故跳过`
+              `${filePath} -未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元的url，请检查代码中 unit = ${unit} 的值是否正确`
             )
             await page.close()
             await checkIsFinish()
-          } else {
-            const btnEles = await page.$$eval(
-              '.m-portlet__body .btn-primary',
-              (elements: any) => {
-                return elements.map((item: any) => {
-                  return item.href
-                })
-              }
-            )
-            const uploadUrl = btnEles[1]
-            if (uploadUrl) {
-              // 进入上传页面
-              await page.goto(uploadUrl, { waitUntil: 'load' })
-
-              // 点击上传文件
-              const uploadInput = await page.waitForSelector(
-                '.uploader .uploader__input'
-              )
-              await uploadInput.uploadFile(filePath)
-
-              // 监听上传请求成功
-              await page.waitForSelector('.uploader img[src^="blob"]')
-
-              await page.waitFor(1000)
-              // 点击确定
-              await page.click('.m-form__actions .btn-primary')
-
-              await page.waitFor(1000)
-
-              await page.close()
-              console.log(
-                '\x1B[36m%s\x1B[0m',
-                `${filePath} -${version}-${grade}-${unit} 单元上传成功！！！！`
-              )
-              await checkIsFinish()
-            } else {
-              console.error(
-                '\x1B[31m%s\x1B[0m',
-                `${filePath} -未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元上传 url, 请检查`
-              )
-              await page.close()
-              await checkIsFinish()
-            }
           }
         } else {
           console.error(
             '\x1B[31m%s\x1B[0m',
-            `${filePath} -未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元的url，请检查代码中 unit = ${unit} 的值是否正确`
+            `${filePath} -未找到对应 ${version} 版本 ${grade} 年级的url，请检查代码中 grade = ${grade} 的值是否正确`
           )
           await page.close()
           await checkIsFinish()
@@ -245,26 +267,19 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
       } else {
         console.error(
           '\x1B[31m%s\x1B[0m',
-          `${filePath} -未找到对应 ${version} 版本 ${grade} 年级的url，请检查代码中 grade = ${grade} 的值是否正确`
+          `${filePath} -未找到对应 ${version} 版本的url，请检查代码中 version = ${version} 的值是否正确`
         )
         await page.close()
         await checkIsFinish()
       }
-    } else {
-      console.error(
-        '\x1B[31m%s\x1B[0m',
-        `${filePath} -未找到对应 ${version} 版本的url，请检查代码中 version = ${version} 的值是否正确`
-      )
-      await page.close()
-      await checkIsFinish()
-    }
+    })
   }
 
   async function readFileDir(filePath: string) {
-    fs.readdir(filePath, function (err: any, files: any) {
+    fs.readdir(filePath, async function (err: any, files: any) {
       if (err) throw err
 
-      utils.asyncForEach(files, async (file: any, index: number) => {
+      for (const [index, file] of files.entries()) {
         //拼接获取绝对路径，fs.stat(绝对路径,回调函数)
         let _path = path.join(filePath, file)
         await fs.stat(_path, async (err: any, stat: { isFile: () => any }) => {
@@ -283,12 +298,14 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
               filePath: _path
             }
             const isFinish = index === files.length - 1
-            await uploldFileItem(params, isFinish)
+            setTimeout(async () => {
+              await uploldFileItem(params, isFinish)
+            }, index * 15000)
           } else {
             readFileDir(_path)
           }
         })
-      })
+      }
     })
   }
 
