@@ -79,7 +79,8 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
       // 是否自动打开调试工具(boolean)，若此值为true，headless自动置为fasle
       devtools: false,
       // 设置超时时间(number)，若此值为0，则禁用超时
-      timeout: 20000
+      timeout: 20000,
+      exitOnPageError: false
     })
     .catch(() => browser.close)
 
@@ -89,15 +90,16 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
 
     await page.setCookie(...cookies)
 
-    await page.goto(pageUrl)
+    await page.goto(pageUrl, { waitUntil: 'load' })
 
     async function checkIsFinish() {
       if (isFinish) {
-        await browser.close()
         console.log(
           '\x1B[36m%s\x1B[0m',
           `${allFilePath} 文件已全部上传，请检查！`
         )
+        await page.waitFor(1000)
+        await browser.close()
         process.exit()
       }
     }
@@ -124,7 +126,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
 
     if (gradeUrl) {
       // 进入年级页面
-      await page.goto(gradeUrl)
+      await page.goto(gradeUrl, { waitUntil: 'load' })
 
       const gradeEles = await page.$$eval(
         '.dashboard-datatable tbody tr',
@@ -149,7 +151,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
 
       if (unitUrl) {
         // 进入单元页面
-        await page.goto(unitUrl)
+        await page.goto(unitUrl, { waitUntil: 'load' })
 
         const unitEles = await page.$$eval(
           '.dashboard-datatable tbody tr',
@@ -174,7 +176,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
           )?.url ?? ''
         if (fileUrl) {
           // 进入文件页面
-          await page.goto(fileUrl)
+          await page.goto(fileUrl, { waitUntil: 'load' })
 
           const fileLists = await page.$$('.dashboard-datatable tbody tr')
           /**
@@ -200,7 +202,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
             const uploadUrl = btnEles[1]
             if (uploadUrl) {
               // 进入上传页面
-              await page.goto(uploadUrl)
+              await page.goto(uploadUrl, { waitUntil: 'load' })
 
               // 点击上传文件
               const uploadInput = await page.waitForSelector(
