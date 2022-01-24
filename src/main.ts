@@ -208,7 +208,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
                 '\x1B[31m%s\x1B[0m',
                 `${filePath} - ${version}-${grade}-${unit} 已存在解析数据，防止数据重复故跳过`
               )
-              // await page.close()
+              await page.close()
               await checkIsFinish()
             } else {
               const btnEles = await page.$$eval(
@@ -239,9 +239,9 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
                 // 点击确定
                 await page.click('.m-form__actions .btn-primary')
 
-                // await page.waitFor(1000)
+                await page.waitFor(1000)
 
-                // await page.close()
+                await page.close()
                 console.log(
                   '\x1B[36m%s\x1B[0m',
                   `${filePath} -${version}-${grade}-${unit} 单元上传成功！！！！`
@@ -252,7 +252,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
                   '\x1B[31m%s\x1B[0m',
                   `${filePath} -未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元上传 url, 请检查`
                 )
-                // await page.close()
+                await page.close()
                 await checkIsFinish()
               }
             }
@@ -261,7 +261,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
               '\x1B[31m%s\x1B[0m',
               `${filePath} -未找到对应 ${version} 版本 ${grade} 年级 ${unit} 单元的url，请检查代码中 unit = ${unit} 的值是否正确`
             )
-            // await page.close()
+            await page.close()
             await checkIsFinish()
           }
         } else {
@@ -269,7 +269,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
             '\x1B[31m%s\x1B[0m',
             `${filePath} -未找到对应 ${version} 版本 ${grade} 年级的url，请检查代码中 grade = ${grade} 的值是否正确`
           )
-          // await page.close()
+          await page.close()
           await checkIsFinish()
         }
       } else {
@@ -277,7 +277,7 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
           '\x1B[31m%s\x1B[0m',
           `${filePath} -未找到对应 ${version} 版本的url，请检查代码中 version = ${version} 的值是否正确`
         )
-        // await page.close()
+        await page.close()
         await checkIsFinish()
       }
     })
