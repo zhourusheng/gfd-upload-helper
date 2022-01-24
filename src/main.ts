@@ -4,20 +4,24 @@ const path = require('path')
 import { elesInterface, IParams } from './types'
 
 /**
+ * 当前代码版本: v1.0.1
+ * fix:
+ * - 版本/单元分页找不到 url 问题；
+ * - 性能优化；
  * xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
- * 分割线中间内容可以修改
+ * 分割线以下内容可以修改
  */
 
 /**
  * version 版本
  */
-const version = '(初中)译林版'
+const version = '(初中)冀教版'
 /**
 /**
  * filePath  对应文件的路径
  */
 const allFilePath =
-  'C:/Users/zhourusheng/Desktop/初中默单词（8个版本）/(初中)译林版/七年级上册'
+  'C:/Users/zhourusheng/Desktop/初中默单词（8个版本）/(初中)冀教版/七年级下册'
 
 /**
  * 设置 cookie
@@ -64,7 +68,7 @@ const cookies = [
  */
 const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
 /**
- * 分割线中间内容可以修改
+ * 分割线以上内容可以修改
  * xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
  */
 
@@ -118,6 +122,8 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
 
       await page.waitFor(1000)
 
+      let gradeUrl: string = ''
+
       /**
        * 获取对应版本和 url
        */
@@ -134,9 +140,56 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
       )
       // console.log('对应的版本和页面url:', versionEles)
 
-      const gradeUrl =
+      gradeUrl =
         versionEles.find((item: elesInterface) => item.version === version)
           ?.url ?? ''
+
+      // 判断是否存在分页
+      const hasPagination = await page.$$(
+        '.dataTables_wrapper .pagination_wrap .pagination'
+      )
+
+      // 第一页没找到 fileUrl, 并且存在分页时, 则遍历 pagination 继续查找
+      if (!gradeUrl && hasPagination) {
+        const paginationEles = await page.$$eval(
+          '.dataTables_wrapper .pagination_wrap .pagination .page-item',
+          (elements: any) => {
+            return elements.map((item: any) => {
+              return item.children[0]?.href
+            })
+          }
+        )
+        const _paginationEles = [
+          ...new Set(paginationEles.filter((item: any) => !!item))
+        ]
+
+        for (let index = 0; index < _paginationEles.length; index++) {
+          const url = _paginationEles[index]
+          await page.goto(url, { waitUntil: 'load' })
+          await page.waitFor(1000)
+
+          const _versionEles = await page.$$eval(
+            '.dashboard-datatable tbody tr',
+            (elements: any) => {
+              return elements.map((item: any) => {
+                return {
+                  version: item.children[0].innerText,
+                  url: item.children[3].children[0].href
+                }
+              })
+            }
+          )
+
+          const _url =
+            _versionEles.find((item: elesInterface) => item.version === version)
+              ?.url ?? ''
+
+          if (_url) {
+            gradeUrl = _url
+            break
+          }
+        }
+      }
 
       if (gradeUrl) {
         // 进入年级页面
@@ -171,6 +224,8 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
 
           await page.waitFor(1000)
 
+          let fileUrl: string = ''
+
           const unitEles = await page.$$eval(
             '.dashboard-datatable tbody tr',
             (elements: any) => {
@@ -185,13 +240,63 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
             }
           )
 
-          // console.log(`${unit} 对应的url`, unitEles)
-
-          const fileUrl =
+          fileUrl =
             unitEles.find(
               (item: elesInterface) =>
                 item.version === unit.toLowerCase().replace(/\s*/g, '')
             )?.url ?? ''
+
+          // 判断是否存在分页
+          const hasPagination = await page.$$(
+            '.dataTables_wrapper .pagination_wrap .pagination'
+          )
+          // 第一页没找到 fileUrl, 并且存在分页时, 则遍历 pagination 继续查找
+          if (!fileUrl && hasPagination) {
+            const paginationEles = await page.$$eval(
+              '.dataTables_wrapper .pagination_wrap .pagination .page-item',
+              (elements: any) => {
+                return elements.map((item: any) => {
+                  return item.children[0]?.href
+                })
+              }
+            )
+            const _paginationEles = [
+              ...new Set(paginationEles.filter((item: any) => !!item))
+            ]
+
+            for (let index = 0; index < _paginationEles.length; index++) {
+              const url = _paginationEles[index]
+              await page.goto(url, { waitUntil: 'load' })
+              await page.waitFor(1000)
+
+              const _unitEles = await page.$$eval(
+                '.dashboard-datatable tbody tr',
+                (elements: any) => {
+                  return elements.map((item: any) => {
+                    return {
+                      version: item.children[0].innerText
+                        .toLowerCase()
+                        .replace(/\s*/g, ''),
+                      url: item.children[1].children[0].href
+                    }
+                  })
+                }
+              )
+
+              const _url =
+                _unitEles.find(
+                  (item: elesInterface) =>
+                    item.version === unit.toLowerCase().replace(/\s*/g, '')
+                )?.url ?? ''
+
+              if (_url) {
+                fileUrl = _url
+                break
+              }
+            }
+          }
+          // console.log(`${unit} 对应的url`, unitEles)
+
           if (fileUrl) {
             // 进入文件页面
             await page.goto(fileUrl, { waitUntil: 'load' })
