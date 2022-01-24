@@ -4,10 +4,11 @@ const path = require('path')
 import { elesInterface, IParams } from './types'
 
 /**
- * 当前代码版本: v1.0.1
+ * 当前代码版本: v1.0.2
  * fix:
  * - 版本/单元分页找不到 url 问题；
  * - 性能优化；
+ * - .xlsx 后缀获取 unit 问题
  * xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
  * 分割线以下内容可以修改
  */
@@ -15,13 +16,13 @@ import { elesInterface, IParams } from './types'
 /**
  * version 版本
  */
-const version = '(初中)冀教版'
+const version = '(初中)北师大版（同北京课改版）'
 /**
 /**
  * filePath  对应文件的路径
  */
 const allFilePath =
-  'C:/Users/zhourusheng/Desktop/初中默单词（8个版本）/(初中)冀教版/七年级下册'
+  'C:/Users/zhourusheng/Desktop/初中默单词（8个版本）/(初中)北师大版（同北京课改版）/八年级下册'
 
 /**
  * 设置 cookie
@@ -402,8 +403,8 @@ const pageUrl = 'https://api.xbxxhz.com/dashboard/guess_write_categories'
             const grade = arr.split('\\')[1].replace('册', '')
             const unit = arr
               .split('\\')[2]
-              .replace('.xls', '')
               .replace('.xlsx', '')
+              .replace('.xls', '')
             const params = {
               version,
               grade,
